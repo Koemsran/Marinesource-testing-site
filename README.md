@@ -20,10 +20,16 @@ The tests have been organized into individual files for better maintainability:
 10. **images.spec.ts** - Image loading correctly
 11. **map-integration.spec.ts** - Map and location features
 
+## Prerequisites
+
+- **Node.js** (version 16 or higher)
+- **npm** (comes with Node.js)
+
 ## Installation
 
 ```bash
 npm install
+npx playwright install
 ```
 
 ## Running Tests
@@ -84,4 +90,59 @@ npm run test:image
 # Map integration
 npm run test:maps
 
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**1. "Browser not found" error:**
+```bash
+npx playwright install
+```
+
+**2. "Module not found" error:**
+```bash
+npm install
+```
+
+**3. Tests failing due to timeouts:**
+- Check your internet connection
+- Ensure MarineSource.com website is accessible
+- Try running tests with headed mode to see what's happening:
+  ```bash
+  npm run test:headed
+  ```
+
+**4. Permission errors on Windows:**
+- Run terminal as Administrator
+- Or use PowerShell instead of Command Prompt
+
+### Team Workflow
+
+1. **Before starting work:** Pull latest changes
+   ```bash
+   git pull origin dev
+   ```
+
+2. **After cloning/pulling:** Always reinstall dependencies
+   ```bash
+   npm install
+   ```
+
+3. **Before committing:** Run tests to ensure they pass
+   ```bash
+   npm test
+   ```
+
+## Project Structure
+
+```
+├── tests/              # Test files
+│   ├── auth.spec.ts    # Authentication tests
+│   ├── homepage.spec.ts # Homepage tests
+│   └── ...             # Other test files
+├── test-results/       # Test artifacts (ignored by git)
+├── package.json        # Dependencies and scripts
+└── README.md          # This file
 ```
