@@ -1,0 +1,31 @@
+{
+  "name": "marinesource-tests",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:individual": "playwright test tests/",
+    "test:auth": "playwright test tests/auth.spec.ts",
+    "test:homepage": "playwright test tests/homepage.spec.ts",
+    "test:blog": "playwright test tests/blog-page.spec.ts",
+    "test:boat": "playwright test tests/boat.spec.ts",
+    "test:search": "playwright test tests/search.spec.ts",
+    "test:chat": "playwright test tests/chat-system.spec.ts",
+    "test:contact": "playwright test tests/contact-seller.spec.ts",
+    "test:pagination": "playwright test tests/pagination.spec.ts",
+    "test:responsive": "playwright test tests/responsive.spec.ts",
+    "test:maps": "playwright test tests/map-integration.spec.ts",
+    "test:images": "playwright test comprehensive-image-test.spec.ts"
+
+  },
+  "keywords": ["playwright", "testing", "marinesource", "automation"],
+  "author": "",
+  "license": "ISC",
+  "description": "Automated tests for MarineSource.com website functionality",
+  "devDependencies": {
+    "@playwright/test": "^1.55.1"
+  }
+}
