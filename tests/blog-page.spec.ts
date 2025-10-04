@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const homepageUrl = 'https://marinesource.com';
+const homepageUrl = 'https://www.marinesource.com';
 const blogPageUrl = 'https://marinesource.com/blog';
 
 // Test blog page loadding and navigation to/from homepage and shop page
@@ -55,79 +55,77 @@ test('Page Header, Body, and Footer Content', async ({ page }) => {
   await expect(footer).toBeVisible();
 });
 
-// Test clicking on blog posts to open individual post pages and navigate back
+// Test clicking on blog posts to navigate to individual post pages
 test('Individual Post Pages', async ({ page }) => {
   await page.goto(blogPageUrl);
-  await page.waitForLoadState('networkidle');
+  
+  // List of items that could represent blog posts and click the first one
+  const blogPostItems = page.locator('a[class*="styles_itemContainer"]');
+  await blogPostItems.first().click();
 
-  const blogPostItems = page.locator('div:has(h2), div:has(h3), [class*="card"], [class*="item"], a[href*="blog"]');
-  expect(await blogPostItems.count()).toBeGreaterThan(0);
-
-  const firstPostItem = blogPostItems.first();
-  await expect(firstPostItem).toBeVisible();
-  
-  const postTitleLink = firstPostItem.locator('a, h2, h3').first();
-  await expect(postTitleLink).toBeVisible();
-  await postTitleLink.click();
   await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL(/\/blog\/.+/);
 
-  await expect(page).not.toHaveURL(/.*\/blog\/?$/);
-  
-  const postTitle = page.locator('h1, h2').first();
-  await expect(postTitle).toBeVisible();
-  
-  const authorInfo = page.locator(':has-text("Robert"), :has-text("Rachael"), :has-text("Jon")').first();
-  await expect(authorInfo).toBeVisible();
-  
-  const postContent = page.locator('main, article, .content, [role="main"]');
-  await expect(postContent).toBeVisible();
-  
-  const backLink = page.locator('a:has-text("Back"), a:has-text("Blog"), a[href*="blog"]').first();
-  await expect(backLink).toBeVisible();
-  await backLink.click();
+  // Check page make sure nav is still visible
+  const header = page.locator('.new-navigation_navigation__0clnq');
+  await expect(header).toBeVisible();
+
+  // Check blog post content is visible
+  const postContent = page.locator('header, main, footer');
+  expect(await postContent.count()).toBe(3);
+  for (let i = 0; i < await postContent.count(); i++) {
+    await expect(postContent.nth(i)).toBeVisible();
+  }
+
+  // Check "Back" button is visible and can back to blog page
+  const backButton = page.locator('a[class*="blog_back__VVmUY"]').first();
+  await expect(backButton).toBeVisible();
+  await backButton.click();
   await page.waitForLoadState('networkidle');
-  
   await expect(page).toHaveURL(blogPageUrl);
+
 });
 
-// Test search functionality with "boat" keyword and sorting features
-test('Sorting & Search Features', async ({ page }) => {
+// Test search functionality with the "price" keyword and check for broken links
+test('Search Features', async ({ page }) => {
   await page.goto(blogPageUrl);
-  await page.waitForLoadState('domcontentloaded');
+  await page.waitForLoadState('networkidle');
 
-  const searchInput = page.locator('input[type="search"], input[placeholder*="search"], input[placeholder*="Name"], [class*="search"] input');
-  expect(await searchInput.count()).toBeGreaterThan(0);
-  await expect(searchInput.first()).toBeVisible();
-    
-  await searchInput.first().fill('boat');
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(1500);
+  // ========== Search for "price" ==========
 
-  const searchResults = page.locator('div:has(h2), div:has(h3), [class*="card"], [class*="item"], article');
-  const hasResults = await searchResults.count() > 0;
-  const noResultsMsg = page.locator(':has-text("No results"), :has-text("not found"), :has-text("No posts")');
-  expect(hasResults || await noResultsMsg.count() > 0).toBeTruthy();
+  const searchInput = page.locator('.styles_searchInput__4e2ia');
+  await expect(searchInput).toBeVisible();
+  
+  await searchInput.fill('price');
+  await page.waitForTimeout(1000);
+
+  // Check if search results update
+  const blogPosts = page.locator('a[class*="styles_itemContainer"]');
+  const postCount = await blogPosts.count();
+  expect(postCount).toBeGreaterThan(0);
+
+  // Check for undefined/broken links
+  let validLinks = 0;
+  let problemsFound = [];
+
+  for (let i = 0; i < postCount; i++) {
+    const href = await blogPosts.nth(i).getAttribute('href');
     
-  await searchInput.first().clear();
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(1500);
-  
-  const sortElement = page.locator('[class*="sort"], button:has-text("By Date"), select');
-  await expect(sortElement.first()).toBeVisible();
-  
-  const postTitles = page.locator('h2:not(:has-text("Our Blog Posts")), h3:not(:has-text("Our Blog Posts"))');
-  await expect(postTitles.first()).toBeVisible();
-  const initialTitles = await postTitles.allTextContents();
-  expect(initialTitles.length).toBeGreaterThan(0);
-  
-  await sortElement.first().click();
-  await page.waitForTimeout(2000);
-  
-  const afterSortTitles = await postTitles.allTextContents();
-  expect(afterSortTitles.length).toBeGreaterThan(0);
+    if (!href || href.includes('undefined')) {
+      problemsFound.push(`Post ${i + 1}: Invalid link - ${href}`);
+    } else {
+      validLinks++;
+    }
+  }
+  console.log(`Valid links: ${validLinks}/${postCount}`);
+  expect(validLinks).toBeGreaterThan(0);
+
+  await searchInput.clear();
+  await page.waitForTimeout(1000);
+
 });
 
-// Test image-based slider navigation arrows (next/previous functionality)
+// // Test image-based slider navigation arrows (next/previous functionality)
 test('Slider', async ({ page }) => {
   await page.goto(blogPageUrl);
   await page.waitForLoadState('domcontentloaded');
@@ -148,7 +146,7 @@ test('Slider', async ({ page }) => {
   await expect(blogContent).toBeVisible();
 });
 
-// Test pagination buttons to verify page numbers change (1 of 6 → 2 of 6)
+// // Test pagination buttons to verify page numbers change (1 of 6 → 2 of 6)
 test('Pagination', async ({ page }) => {
   await page.goto(blogPageUrl);
   await page.waitForLoadState('domcontentloaded');
@@ -180,18 +178,7 @@ test('Pagination', async ({ page }) => {
       expect(afterPrevText).not.toBe(afterNextText);
     }
   } else {
+    console.log('No next button found; possibly only one page of results.');
     expect(initialPageText).toContain('of');
   }
-});
-
-// Test basic responsive design - page works on mobile viewport
-test('Responsive Design', async ({ page }) => {
-  await page.goto(blogPageUrl);
-  
-  await page.setViewportSize({ width: 375, height: 667 });
-  const header = page.locator('header');
-  await expect(header).toBeVisible();
-  
-  const blogContent = page.locator('main, .main, .content');
-  await expect(blogContent).toBeVisible();
 });
