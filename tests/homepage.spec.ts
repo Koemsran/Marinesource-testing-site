@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 const homepageUrl = 'https://www.marinesource.com';
+// TODO: Replace with your login session cookie of this website
+const sessionName = 'n';
+const sessionValue = '68df8ff671289919b753efe7';
+const domain = '.marinesource.com';
 
 // ====================== Check all loading and UI elements on homepage =====================
 
@@ -106,35 +110,39 @@ test('Navigation Links', async ({ page }) => {
   }
 });
 
-// ====================== Check all buttons on homepage =====================
+// // ====================== Check all buttons on homepage =====================
 
-test('Contact Our Team Button Functionality', async ({ page }) => {
-    await page.goto(homepageUrl);
-    await page.waitForLoadState('networkidle');
-    
-    // Locate the Contact Our Team button
-    const contactButton = page.locator('a:has-text("Contact Our Team"), button:has-text("Contact Our Team")').first();
-    await expect(contactButton).toBeVisible({ timeout: 10000 });
+test('Contact Our Team Button - Multiple Clicks Test', async ({ page }) => {
+  await page.goto(homepageUrl);
+  await page.waitForLoadState('networkidle');
+  
+  const contactButton = page.locator('a:has-text("Contact Our Team"), button:has-text("Contact Our Team")').first();
+  await expect(contactButton).toBeVisible({ timeout: 10000 });
 
-    // Verify it's a mailto link
-    const mailtoHref = await contactButton.getAttribute('href');
-    expect(mailtoHref).toContain('mailto:');
-    
-    // Test first click
-    await contactButton.click();
-    await page.waitForTimeout(1000);
-    
-    // Verify button remains functional after first click
-    await expect(contactButton).toBeVisible();
-    await expect(contactButton).toBeEnabled();
-    
-    // Test second click to ensure button remains responsive
-    await contactButton.click();
-    await page.waitForTimeout(1000);
-    
-    // Final verification that button is still functional
-    await expect(contactButton).toBeVisible();
-    await expect(contactButton).toBeEnabled();
+  // Verify it's a mailto link
+  const mailtoHref = await contactButton.getAttribute('href');
+  expect(mailtoHref).toContain('mailto:');
+  
+  // First click
+  console.log('Testing first click...');
+  await contactButton.click();
+  await page.waitForTimeout(2000);
+  console.log('First click completed.');
+  
+  // Second click (where the problem occurs)
+  console.log('Testing second click...');
+  await contactButton.click();
+  await page.waitForTimeout(300000); // Wait longer to catch timeout errors
+
+  //Third click
+  console.log('Testing third click...');
+  await contactButton.click();
+  await page.waitForTimeout(30000);
+  
+  // Verify button remains functional
+  await expect(contactButton).toBeVisible();
+  await expect(contactButton).toBeEnabled();
+  
 });
 
 test('Test Get Access Button', async ({ page }) => {
@@ -168,9 +176,27 @@ test('Test Get Access Button', async ({ page }) => {
   expect(page.url()).toContain('marinesource.com');
 });
 
-test('Test Join Community Button', async ({ page }) => {
+test('Test Join Community Button - Logged In User', async ({ page, context }) => {
+  
+  // Add session cookies to simulate logged-in user
+  await context.addCookies([
+    { name: sessionName, value: sessionValue, domain: domain, path: '/' }
+  ]);
+
   await page.goto(homepageUrl);
   await page.waitForLoadState('load');
+  
+  // Verify user is actually logged in by checking for logged-in indicators
+  const userProfile = page.locator('[class*="profile"], [class*="user"], [data-testid*="user"]');
+  const loginLink = page.locator('a:has-text("Login"), button:has-text("Login")');
+  
+  // Check if we see user profile elements or absence of login links
+  const hasUserProfile = await userProfile.count() > 0;
+  const hasLoginLink = await loginLink.isVisible().catch(() => false);
+  
+  if (!hasUserProfile && hasLoginLink) {
+    console.log('⚠️ Warning: User may not be properly logged in');
+  }
   
   const joinButton = page.locator('button:has-text("Join Community"), a:has-text("Join Community")').first();
   await expect(joinButton).toBeVisible({ timeout: 5000 });
@@ -178,13 +204,17 @@ test('Test Join Community Button', async ({ page }) => {
   
   await page.waitForTimeout(3000);
   
+  // Check if login modal appears (this should NOT happen for logged-in users)
   const loginModal = page.locator('div:has-text("Welcome to Marine Source"):has(button:has-text("Login"))').first();
   const isLoginModalVisible = await loginModal.isVisible().catch(() => false);
   
-  if (!isLoginModalVisible) {
-    throw new Error('Join Community button did not show login modal as expected');
+  if (isLoginModalVisible) {
+    // FAIL the test if login modal appears for logged-in user
+    throw new Error('🚨 BUG DETECTED: Login modal appeared for already logged-in user! This should not happen.');
   }
   
-  // Verify login modal appears correctly
-  await expect(loginModal).toBeVisible();
+  // Verify page is still functional
+  const header = page.locator('header');
+  await expect(header).toBeVisible();
+  
 });
